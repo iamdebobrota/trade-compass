@@ -11,6 +11,7 @@ import TradeHistory from "./pages/TradeHistory";
 import WebhookSetup from "./pages/WebhookSetup";
 import Settings from "./pages/Settings";
 import MarketOverview from "./pages/MarketOverview";
+import StockDetails from "./pages/StockDetails";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -58,6 +59,7 @@ function AppRoutes() {
       <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/market" element={<ProtectedRoute><MarketOverview /></ProtectedRoute>} />
+      <Route path="/stock/:symbol" element={<ProtectedRoute><StockDetails /></ProtectedRoute>} />
       <Route path="/trades" element={<ProtectedRoute><ActiveTrades /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><TradeHistory /></ProtectedRoute>} />
       <Route path="/webhook" element={<ProtectedRoute><WebhookSetup /></ProtectedRoute>} />

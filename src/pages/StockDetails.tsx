@@ -1,0 +1,436 @@
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  ArrowLeft,
+  TrendingUp,
+  TrendingDown,
+  Users,
+  Clock,
+  BarChart3,
+  Target,
+  ShoppingCart,
+  RefreshCw,
+  ArrowUpRight,
+  ArrowDownRight,
+  Activity,
+  Sparkles
+} from 'lucide-react';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar
+} from 'recharts';
+import { QuickTradeDialog } from '@/components/market/QuickTradeDialog';
+import { StockAnalysis } from '@/components/market/StockAnalysis';
+
+interface PriceHistory {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+interface InvestorActivity {
+  last10Min: { buyers: number; sellers: number };
+  last1Hour: { buyers: number; sellers: number };
+  last24Hours: { buyers: number; sellers: number };
+  last7Days: { buyers: number; sellers: number };
+}
+
+interface StockDetails {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  exchange: string;
+  priceHistory: PriceHistory[];
+  investorActivity: InvestorActivity;
+  marketCap: string;
+  pe: string;
+  eps: string;
+  dividend: string;
+  high52Week: string;
+  low52Week: string;
+  avgVolume: number;
+  beta: string;
+}
+
+export default function StockDetailsPage() {
+  const { symbol } = useParams<{ symbol: string }>();
+  const navigate = useNavigate();
+  const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
+  const [chartPeriod, setChartPeriod] = useState<'1D' | '1W' | '1M' | '3M' | '1Y'>('1M');
+
+  const { data: stock, isLoading, refetch, isRefetching } = useQuery({
+    queryKey: ['stock-details', symbol],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('market-data', {
+        body: { action: 'getStockDetails', symbol }
+      });
+      if (error) throw error;
+      return data as StockDetails;
+    },
+    enabled: !!symbol,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  const formatLargeNumber = (value: string | number) => {
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
+    if (num >= 100000) return `₹${(num / 100000).toFixed(2)} L`;
+    return `₹${num.toLocaleString('en-IN')}`;
+  };
+
+  const getFilteredHistory = () => {
+    if (!stock?.priceHistory) return [];
+    const days = chartPeriod === '1D' ? 1 : chartPeriod === '1W' ? 7 : chartPeriod === '1M' ? 30 : chartPeriod === '3M' ? 90 : 365;
+    return stock.priceHistory.slice(-Math.min(days, stock.priceHistory.length));
+  };
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-96 w-full" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Skeleton className="h-48" />
+            <Skeleton className="h-48" />
+            <Skeleton className="h-48" />
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!stock) {
+    return (
+      <AppLayout>
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Stock not found</p>
+          <Button onClick={() => navigate('/market')} className="mt-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Market
+          </Button>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const isPositive = stock.change >= 0;
+
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/market')}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold">{stock.symbol.replace('.NS', '').replace('.BO', '')}</h1>
+                <Badge variant="outline">{stock.exchange}</Badge>
+              </div>
+              <p className="text-muted-foreground">{stock.name}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => refetch()} disabled={isRefetching}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button 
+              onClick={() => setTradeDialogOpen(true)}
+              className={isPositive ? 'bg-profit hover:bg-profit/90' : 'bg-loss hover:bg-loss/90'}
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Trade
+            </Button>
+          </div>
+        </div>
+
+        {/* Price Section */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-end gap-4">
+              <span className="text-4xl font-bold">{formatCurrency(stock.price)}</span>
+              <div className={`flex items-center text-lg ${isPositive ? 'text-profit' : 'text-loss'}`}>
+                {isPositive ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+                <span>{isPositive ? '+' : ''}{stock.change.toFixed(2)}</span>
+                <span className="ml-1">({isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%)</span>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Last updated: {new Date().toLocaleTimeString('en-IN')} IST
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Price Chart */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Price History
+              </CardTitle>
+              <div className="flex gap-1">
+                {(['1D', '1W', '1M', '3M', '1Y'] as const).map((period) => (
+                  <Button
+                    key={period}
+                    variant={chartPeriod === period ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setChartPeriod(period)}
+                  >
+                    {period}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={getFilteredHistory()}>
+                  <defs>
+                    <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={isPositive ? '#22c55e' : '#ef4444'} stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor={isPositive ? '#22c55e' : '#ef4444'} stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => {
+                      const date = new Date(value);
+                      return chartPeriod === '1D' ? date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) 
+                        : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+                    }}
+                  />
+                  <YAxis 
+                    domain={['auto', 'auto']}
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => `₹${value.toFixed(0)}`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
+                    formatter={(value: number) => [formatCurrency(value), 'Price']}
+                    labelFormatter={(label) => new Date(label).toLocaleDateString('en-IN', { 
+                      weekday: 'short', 
+                      day: 'numeric', 
+                      month: 'short' 
+                    })}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="close" 
+                    stroke={isPositive ? '#22c55e' : '#ef4444'} 
+                    strokeWidth={2}
+                    fill="url(#colorPrice)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-sm text-muted-foreground">Market Cap</p>
+              <p className="text-xl font-bold">{formatLargeNumber(stock.marketCap)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-sm text-muted-foreground">P/E Ratio</p>
+              <p className="text-xl font-bold">{stock.pe}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-sm text-muted-foreground">EPS</p>
+              <p className="text-xl font-bold">₹{stock.eps}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-sm text-muted-foreground">Dividend Yield</p>
+              <p className="text-xl font-bold">{stock.dividend}%</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-sm text-muted-foreground">52W High</p>
+              <p className="text-xl font-bold text-profit">₹{stock.high52Week}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-sm text-muted-foreground">52W Low</p>
+              <p className="text-xl font-bold text-loss">₹{stock.low52Week}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-sm text-muted-foreground">Avg Volume</p>
+              <p className="text-xl font-bold">{(stock.avgVolume / 1000000).toFixed(2)}M</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-sm text-muted-foreground">Beta</p>
+              <p className="text-xl font-bold">{stock.beta}</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Investor Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Investor Activity
+            </CardTitle>
+            <CardDescription>
+              Real-time buying and selling activity from investors
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(stock.investorActivity).map(([period, data]) => {
+                const labels: Record<string, string> = {
+                  last10Min: 'Last 10 Minutes',
+                  last1Hour: 'Last 1 Hour',
+                  last24Hours: 'Last 24 Hours',
+                  last7Days: 'Last 7 Days',
+                };
+                const buyerPercent = (data.buyers / (data.buyers + data.sellers)) * 100;
+                return (
+                  <div key={period} className="p-4 rounded-lg border bg-card">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">{labels[period]}</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-profit flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3" />
+                          Buyers
+                        </span>
+                        <span className="font-medium">{data.buyers.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-loss flex items-center gap-1">
+                          <TrendingDown className="h-3 w-3" />
+                          Sellers
+                        </span>
+                        <span className="font-medium">{data.sellers.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-loss overflow-hidden">
+                        <div 
+                          className="h-full bg-profit transition-all" 
+                          style={{ width: `${buyerPercent}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-center text-muted-foreground">
+                        {buyerPercent > 50 ? 'Bullish' : 'Bearish'} ({buyerPercent.toFixed(1)}% buying)
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* AI Analysis */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Stock Analysis
+            </CardTitle>
+            <CardDescription>
+              AI-powered insights and trading recommendations for {stock.symbol}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StockAnalysis symbol={stock.symbol} currentPrice={stock.price} />
+          </CardContent>
+        </Card>
+
+        {/* Volume Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              Trading Volume
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={getFilteredHistory()}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={(value) => new Date(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
+                    formatter={(value: number) => [`${(value / 1000000).toFixed(2)}M`, 'Volume']}
+                  />
+                  <Bar dataKey="volume" fill="hsl(var(--primary))" opacity={0.7} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <QuickTradeDialog
+        open={tradeDialogOpen}
+        onOpenChange={setTradeDialogOpen}
+        symbol={stock.symbol}
+        initialPrice={stock.price}
+      />
+    </AppLayout>
+  );
+}
