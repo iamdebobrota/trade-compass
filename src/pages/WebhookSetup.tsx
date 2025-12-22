@@ -1,20 +1,31 @@
 import { AppLayout } from '@/components/layout/AppLayout';
-import { useTradingSettings } from '@/hooks/useTradingSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Copy, Check, Webhook, AlertCircle } from 'lucide-react';
+import { Copy, Check, Webhook, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function WebhookSetup() {
-  const { data: settings, isLoading } = useTradingSettings();
+  const { user } = useAuth();
   const [copied, setCopied] = useState(false);
 
-  const webhookUrl = settings?.webhook_secret 
-    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tradingview-webhook?secret=${settings.webhook_secret}`
-    : '';
+  // Fetch webhook URL from edge function
+  const { data: webhookData, isLoading, refetch, isRefetching } = useQuery({
+    queryKey: ['webhook-url'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-webhook-url');
+      if (error) throw error;
+      return data as { webhookUrl: string };
+    },
+    enabled: !!user,
+  });
+
+  const webhookUrl = webhookData?.webhookUrl || '';
 
   const copyToClipboard = async () => {
     try {
@@ -46,15 +57,6 @@ export default function WebhookSetup() {
 
         {isLoading ? (
           <Skeleton className="h-64 w-full" />
-        ) : !settings ? (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3 text-warning">
-                <AlertCircle className="h-5 w-5" />
-                <p>Please complete your settings setup first to get your webhook URL.</p>
-              </div>
-            </CardContent>
-          </Card>
         ) : (
           <>
             <Card>
@@ -73,9 +75,13 @@ export default function WebhookSetup() {
                     value={webhookUrl}
                     readOnly
                     className="font-mono text-sm"
+                    placeholder="Loading..."
                   />
-                  <Button onClick={copyToClipboard} variant="outline">
+                  <Button onClick={copyToClipboard} variant="outline" disabled={!webhookUrl}>
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                  <Button onClick={() => refetch()} variant="outline" disabled={isRefetching}>
+                    <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
