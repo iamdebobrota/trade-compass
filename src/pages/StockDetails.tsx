@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -78,7 +78,11 @@ export default function StockDetailsPage() {
   const { symbol } = useParams<{ symbol: string }>();
   const navigate = useNavigate();
   const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
-  const [chartPeriod, setChartPeriod] = useState<'1D' | '1W' | '1M' | '3M' | '1Y'>('1M');
+  const [chartPeriod, setChartPeriod] = useState<'1D' | '1W' | '1M' | '3M' | '1Y'>('1D');
+  const [livePrice, setLivePrice] = useState<number | null>(null);
+  const [livePriceHistory, setLivePriceHistory] = useState<PriceHistory[]>([]);
+  const [isLive, setIsLive] = useState(true);
+  const lastUpdateRef = useRef<Date>(new Date());
 
   const { data: stock, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['stock-details', symbol],
@@ -90,8 +94,56 @@ export default function StockDetailsPage() {
       return data as StockDetails;
     },
     enabled: !!symbol,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 0,
   });
+
+  // Live price simulation - updates every 2 seconds
+  useEffect(() => {
+    if (!stock) return;
+    
+    setLivePrice(stock.price);
+    setLivePriceHistory(stock.priceHistory || []);
+    
+    const interval = setInterval(() => {
+      if (!isLive) return;
+      
+      setLivePrice(prev => {
+        if (prev === null) return stock.price;
+        // Simulate small price fluctuations (±0.5%)
+        const fluctuation = (Math.random() - 0.5) * 0.01 * prev;
+        return parseFloat((prev + fluctuation).toFixed(2));
+      });
+      
+      // Add new point to live chart every 2 seconds for 1D view
+      setLivePriceHistory(prev => {
+        const now = new Date();
+        const newPoint: PriceHistory = {
+          date: now.toISOString(),
+          open: livePrice || stock.price,
+          high: (livePrice || stock.price) * 1.001,
+          low: (livePrice || stock.price) * 0.999,
+          close: livePrice || stock.price,
+          volume: Math.floor(Math.random() * 100000) + 50000,
+        };
+        
+        // Keep last 100 points for 1D view
+        const updated = [...prev, newPoint];
+        return updated.slice(-100);
+      });
+      
+      lastUpdateRef.current = new Date();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [stock, isLive]);
+
+  // Also refetch full data every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -109,10 +161,18 @@ export default function StockDetailsPage() {
   };
 
   const getFilteredHistory = () => {
+    if (chartPeriod === '1D') {
+      // Use live price history for 1D view
+      return livePriceHistory.slice(-50);
+    }
     if (!stock?.priceHistory) return [];
-    const days = chartPeriod === '1D' ? 1 : chartPeriod === '1W' ? 7 : chartPeriod === '1M' ? 30 : chartPeriod === '3M' ? 90 : 365;
+    const days = chartPeriod === '1W' ? 7 : chartPeriod === '1M' ? 30 : chartPeriod === '3M' ? 90 : 365;
     return stock.priceHistory.slice(-Math.min(days, stock.priceHistory.length));
   };
+
+  const currentPrice = livePrice ?? stock?.price ?? 0;
+  const priceChange = stock ? currentPrice - stock.price + stock.change : 0;
+  const priceChangePercent = stock ? ((currentPrice - stock.price) / stock.price * 100) + stock.changePercent : 0;
 
   if (isLoading) {
     return (
@@ -144,7 +204,7 @@ export default function StockDetailsPage() {
     );
   }
 
-  const isPositive = stock.change >= 0;
+  const isPositive = priceChange >= 0;
 
   return (
     <AppLayout>
@@ -164,6 +224,15 @@ export default function StockDetailsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant={isLive ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setIsLive(!isLive)}
+              className={isLive ? 'bg-profit hover:bg-profit/90' : ''}
+            >
+              <div className={`h-2 w-2 rounded-full mr-2 ${isLive ? 'bg-white animate-pulse' : 'bg-muted-foreground'}`} />
+              {isLive ? 'LIVE' : 'Paused'}
+            </Button>
             <Button variant="outline" onClick={() => refetch()} disabled={isRefetching}>
               <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
               Refresh
@@ -179,18 +248,27 @@ export default function StockDetailsPage() {
         </div>
 
         {/* Price Section */}
-        <Card>
+        <Card className={`transition-all duration-300 ${isLive ? 'ring-2 ring-profit/30' : ''}`}>
           <CardContent className="pt-6">
             <div className="flex items-end gap-4">
-              <span className="text-4xl font-bold">{formatCurrency(stock.price)}</span>
+              <span className={`text-4xl font-bold transition-colors duration-200 ${isLive ? (isPositive ? 'text-profit' : 'text-loss') : ''}`}>
+                {formatCurrency(currentPrice)}
+              </span>
               <div className={`flex items-center text-lg ${isPositive ? 'text-profit' : 'text-loss'}`}>
                 {isPositive ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
-                <span>{isPositive ? '+' : ''}{stock.change.toFixed(2)}</span>
-                <span className="ml-1">({isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%)</span>
+                <span>{isPositive ? '+' : ''}{priceChange.toFixed(2)}</span>
+                <span className="ml-1">({isPositive ? '+' : ''}{priceChangePercent.toFixed(2)}%)</span>
               </div>
+              {isLive && (
+                <Badge variant="outline" className="text-profit border-profit animate-pulse">
+                  <div className="h-1.5 w-1.5 rounded-full bg-profit mr-1.5" />
+                  LIVE
+                </Badge>
+              )}
             </div>
             <p className="text-sm text-muted-foreground mt-2">
-              Last updated: {new Date().toLocaleTimeString('en-IN')} IST
+              Last updated: {lastUpdateRef.current.toLocaleTimeString('en-IN')} IST
+              {isLive && <span className="ml-2 text-profit">(Auto-updating every 2s)</span>}
             </p>
           </CardContent>
         </Card>
@@ -429,7 +507,7 @@ export default function StockDetailsPage() {
         open={tradeDialogOpen}
         onOpenChange={setTradeDialogOpen}
         symbol={stock.symbol}
-        initialPrice={stock.price}
+        initialPrice={currentPrice}
       />
     </AppLayout>
   );
