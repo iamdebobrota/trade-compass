@@ -56,8 +56,9 @@ export function useTrades(segment?: MarketSegment) {
 
 export function useActiveTrades() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ['trades', 'active'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -70,7 +71,35 @@ export function useActiveTrades() {
       return data as Trade[];
     },
     enabled: !!user,
+    refetchInterval: 30000, // Refetch every 30 seconds for price updates
   });
+
+  // Real-time subscription for active trades
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('active-trades-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trades',
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['trades', 'active'] });
+          queryClient.invalidateQueries({ queryKey: ['trading-stats'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
+
+  return query;
 }
 
 export function useClosedTrades() {
