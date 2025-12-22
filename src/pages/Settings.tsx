@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Settings as SettingsIcon, Save, Loader2 } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Loader2, Shield, CheckCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export default function Settings() {
@@ -20,7 +20,6 @@ export default function Settings() {
     trailing_activation_percent: 1.0,
     default_position_size_percent: 10.0,
     max_trades_per_day: 5,
-    alpha_vantage_api_key: '',
   });
 
   useEffect(() => {
@@ -32,7 +31,6 @@ export default function Settings() {
         trailing_activation_percent: Number(settings.trailing_activation_percent),
         default_position_size_percent: Number(settings.default_position_size_percent),
         max_trades_per_day: settings.max_trades_per_day || 5,
-        alpha_vantage_api_key: settings.alpha_vantage_api_key || '',
       });
     }
   }, [settings]);
@@ -178,28 +176,27 @@ export default function Settings() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Market Data API</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-success" />
+                Market Data API
+              </CardTitle>
               <CardDescription>
-                Optional: Add an Alpha Vantage API key for real-time price updates
+                Secure API key management for real-time price updates
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 max-w-lg">
-                <Label htmlFor="alpha_vantage_api_key">Alpha Vantage API Key</Label>
-                <Input
-                  id="alpha_vantage_api_key"
-                  type="password"
-                  placeholder="Enter your API key"
-                  value={formData.alpha_vantage_api_key}
-                  onChange={(e) => setFormData({ ...formData, alpha_vantage_api_key: e.target.value })}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Get a free API key at{' '}
-                  <a href="https://www.alphavantage.co/support/#api-key" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                    alphavantage.co
-                  </a>
-                </p>
+              <div className="flex items-center gap-3 p-4 bg-success/10 rounded-lg border border-success/20">
+                <CheckCircle className="h-5 w-5 text-success" />
+                <div>
+                  <p className="font-medium text-success">Alpha Vantage API Key Secured</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your API key is stored securely and only accessible to backend functions.
+                  </p>
+                </div>
               </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                To update your API key, contact support or use the Lovable Cloud secrets manager.
+              </p>
             </CardContent>
           </Card>
 
