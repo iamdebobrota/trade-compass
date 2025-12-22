@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,8 +19,10 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   ShoppingCart,
-  Globe,
-  Loader2
+  BarChart3,
+  Loader2,
+  ChevronRight,
+  Globe
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { QuickTradeDialog } from '@/components/market/QuickTradeDialog';
@@ -42,11 +45,16 @@ interface SearchResult {
 }
 
 export default function MarketOverview() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedStock, setSelectedStock] = useState<{ symbol: string; price: number } | null>(null);
   const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
+
+  const handleViewDetails = (symbol: string) => {
+    navigate(`/stock/${encodeURIComponent(symbol)}`);
+  };
 
   // Fetch market overview data
   const { data: marketData, isLoading, refetch, isRefetching } = useQuery({
@@ -93,10 +101,13 @@ export default function MarketOverview() {
   };
 
   const StockCard = ({ stock, showVolume = false }: { stock: Stock; showVolume?: boolean }) => (
-    <div className="flex items-center justify-between p-4 rounded-lg bg-card border hover:bg-accent/50 transition-colors">
+    <div 
+      className="flex items-center justify-between p-4 rounded-lg bg-card border hover:bg-accent/50 transition-colors cursor-pointer"
+      onClick={() => handleViewDetails(stock.symbol)}
+    >
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-bold">{stock.symbol}</span>
+          <span className="font-bold">{stock.symbol.replace('.NS', '').replace('.BO', '')}</span>
           <span className="text-sm text-muted-foreground truncate max-w-[150px]">{stock.name}</span>
         </div>
         {showVolume && stock.volume && (
@@ -105,7 +116,7 @@ export default function MarketOverview() {
       </div>
       <div className="flex items-center gap-4">
         <div className="text-right">
-          <p className="font-semibold">${stock.price.toFixed(2)}</p>
+          <p className="font-semibold">₹{stock.price.toFixed(2)}</p>
           <div className={`flex items-center text-sm ${stock.change >= 0 ? 'text-profit' : 'text-loss'}`}>
             {stock.change >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
             <span>{stock.change >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%</span>
@@ -114,10 +125,14 @@ export default function MarketOverview() {
         <Button 
           size="sm" 
           variant="outline"
-          onClick={() => handleQuickBuy(stock.symbol, stock.price)}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleQuickBuy(stock.symbol, stock.price);
+          }}
         >
           <ShoppingCart className="h-4 w-4" />
         </Button>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
       </div>
     </div>
   );

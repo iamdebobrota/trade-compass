@@ -5,37 +5,83 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Demo stock data for when API is not available or for testing
+// Indian stocks demo data (NSE symbols)
 const demoStocks = {
   topGainers: [
-    { symbol: 'NVDA', name: 'NVIDIA Corp', price: 875.25, change: 45.30, changePercent: 5.47 },
-    { symbol: 'TSLA', name: 'Tesla Inc', price: 248.50, change: 12.80, changePercent: 5.43 },
-    { symbol: 'AMD', name: 'AMD Inc', price: 142.30, change: 6.20, changePercent: 4.56 },
-    { symbol: 'META', name: 'Meta Platforms', price: 505.25, change: 18.50, changePercent: 3.80 },
-    { symbol: 'AAPL', name: 'Apple Inc', price: 198.75, change: 5.25, changePercent: 2.71 },
+    { symbol: 'TATAMOTORS.NS', name: 'Tata Motors Ltd', price: 892.50, change: 45.30, changePercent: 5.35, exchange: 'NSE' },
+    { symbol: 'ADANIENT.NS', name: 'Adani Enterprises', price: 2845.75, change: 125.80, changePercent: 4.63, exchange: 'NSE' },
+    { symbol: 'BAJFINANCE.NS', name: 'Bajaj Finance Ltd', price: 7245.20, change: 285.50, changePercent: 4.10, exchange: 'NSE' },
+    { symbol: 'TATAPOWER.NS', name: 'Tata Power Company', price: 425.80, change: 15.20, changePercent: 3.70, exchange: 'NSE' },
+    { symbol: 'ONGC.NS', name: 'Oil & Natural Gas Corp', price: 275.45, change: 8.90, changePercent: 3.34, exchange: 'NSE' },
   ],
   topLosers: [
-    { symbol: 'INTC', name: 'Intel Corp', price: 35.20, change: -2.80, changePercent: -7.37 },
-    { symbol: 'BA', name: 'Boeing Co', price: 198.40, change: -12.60, changePercent: -5.97 },
-    { symbol: 'DIS', name: 'Walt Disney', price: 95.30, change: -4.70, changePercent: -4.70 },
-    { symbol: 'PYPL', name: 'PayPal Holdings', price: 62.80, change: -2.20, changePercent: -3.39 },
-    { symbol: 'NFLX', name: 'Netflix Inc', price: 485.60, change: -15.40, changePercent: -3.07 },
+    { symbol: 'INFY.NS', name: 'Infosys Ltd', price: 1485.30, change: -65.20, changePercent: -4.21, exchange: 'NSE' },
+    { symbol: 'TCS.NS', name: 'Tata Consultancy Services', price: 3820.50, change: -142.30, changePercent: -3.59, exchange: 'NSE' },
+    { symbol: 'WIPRO.NS', name: 'Wipro Ltd', price: 445.25, change: -15.80, changePercent: -3.43, exchange: 'NSE' },
+    { symbol: 'HCLTECH.NS', name: 'HCL Technologies', price: 1625.40, change: -48.60, changePercent: -2.90, exchange: 'NSE' },
+    { symbol: 'TECHM.NS', name: 'Tech Mahindra Ltd', price: 1345.75, change: -32.45, changePercent: -2.35, exchange: 'NSE' },
   ],
   mostActive: [
-    { symbol: 'AAPL', name: 'Apple Inc', price: 198.75, volume: '125.4M', change: 5.25, changePercent: 2.71 },
-    { symbol: 'TSLA', name: 'Tesla Inc', price: 248.50, volume: '98.2M', change: 12.80, changePercent: 5.43 },
-    { symbol: 'NVDA', name: 'NVIDIA Corp', price: 875.25, volume: '85.6M', change: 45.30, changePercent: 5.47 },
-    { symbol: 'AMZN', name: 'Amazon.com', price: 178.25, volume: '72.3M', change: 3.50, changePercent: 2.00 },
-    { symbol: 'MSFT', name: 'Microsoft', price: 375.80, volume: '65.1M', change: 8.20, changePercent: 2.23 },
+    { symbol: 'RELIANCE.NS', name: 'Reliance Industries', price: 2485.60, volume: '45.2M', change: 35.40, changePercent: 1.45, exchange: 'NSE' },
+    { symbol: 'HDFCBANK.NS', name: 'HDFC Bank Ltd', price: 1685.25, volume: '38.5M', change: 22.80, changePercent: 1.37, exchange: 'NSE' },
+    { symbol: 'ICICIBANK.NS', name: 'ICICI Bank Ltd', price: 1125.40, volume: '32.1M', change: -8.60, changePercent: -0.76, exchange: 'NSE' },
+    { symbol: 'SBIN.NS', name: 'State Bank of India', price: 785.30, volume: '28.7M', change: 12.50, changePercent: 1.62, exchange: 'NSE' },
+    { symbol: 'BHARTIARTL.NS', name: 'Bharti Airtel Ltd', price: 1545.80, volume: '25.3M', change: 28.40, changePercent: 1.87, exchange: 'NSE' },
   ],
-  forexPairs: [
-    { symbol: 'EUR/USD', name: 'Euro/US Dollar', price: 1.0892, change: 0.0023, changePercent: 0.21 },
-    { symbol: 'GBP/USD', name: 'British Pound/US Dollar', price: 1.2715, change: -0.0045, changePercent: -0.35 },
-    { symbol: 'USD/JPY', name: 'US Dollar/Japanese Yen', price: 149.25, change: 0.85, changePercent: 0.57 },
-    { symbol: 'USD/INR', name: 'US Dollar/Indian Rupee', price: 83.12, change: 0.15, changePercent: 0.18 },
-    { symbol: 'AUD/USD', name: 'Australian Dollar/US Dollar', price: 0.6542, change: -0.0012, changePercent: -0.18 },
+  nifty50: [
+    { symbol: 'RELIANCE.NS', name: 'Reliance Industries', price: 2485.60, change: 35.40, changePercent: 1.45, exchange: 'NSE' },
+    { symbol: 'TCS.NS', name: 'Tata Consultancy Services', price: 3820.50, change: -142.30, changePercent: -3.59, exchange: 'NSE' },
+    { symbol: 'HDFCBANK.NS', name: 'HDFC Bank Ltd', price: 1685.25, change: 22.80, changePercent: 1.37, exchange: 'NSE' },
+    { symbol: 'INFY.NS', name: 'Infosys Ltd', price: 1485.30, change: -65.20, changePercent: -4.21, exchange: 'NSE' },
+    { symbol: 'ICICIBANK.NS', name: 'ICICI Bank Ltd', price: 1125.40, change: -8.60, changePercent: -0.76, exchange: 'NSE' },
+    { symbol: 'HINDUNILVR.NS', name: 'Hindustan Unilever', price: 2580.45, change: 18.90, changePercent: 0.74, exchange: 'NSE' },
+    { symbol: 'ITC.NS', name: 'ITC Ltd', price: 485.20, change: 5.80, changePercent: 1.21, exchange: 'NSE' },
+    { symbol: 'KOTAKBANK.NS', name: 'Kotak Mahindra Bank', price: 1845.60, change: -12.40, changePercent: -0.67, exchange: 'NSE' },
+  ],
+  indices: [
+    { symbol: 'NIFTY50', name: 'Nifty 50', price: 24567.25, change: 125.40, changePercent: 0.51, exchange: 'NSE' },
+    { symbol: 'SENSEX', name: 'BSE Sensex', price: 81234.50, change: 412.30, changePercent: 0.51, exchange: 'BSE' },
+    { symbol: 'BANKNIFTY', name: 'Nifty Bank', price: 52345.80, change: -285.60, changePercent: -0.54, exchange: 'NSE' },
+    { symbol: 'NIFTYIT', name: 'Nifty IT', price: 38452.15, change: -856.40, changePercent: -2.18, exchange: 'NSE' },
+    { symbol: 'NIFTYPHARMA', name: 'Nifty Pharma', price: 21845.30, change: 145.80, changePercent: 0.67, exchange: 'NSE' },
   ],
 };
+
+// Generate mock price history for charts
+function generatePriceHistory(basePrice: number, days: number = 30) {
+  const history = [];
+  let currentPrice = basePrice * 0.9;
+  const now = new Date();
+  
+  for (let i = days; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    
+    const change = (Math.random() - 0.45) * (basePrice * 0.03);
+    currentPrice = Math.max(currentPrice + change, basePrice * 0.7);
+    
+    history.push({
+      date: date.toISOString().split('T')[0],
+      open: currentPrice - Math.random() * 10,
+      high: currentPrice + Math.random() * 15,
+      low: currentPrice - Math.random() * 15,
+      close: currentPrice,
+      volume: Math.floor(Math.random() * 10000000) + 1000000,
+    });
+  }
+  
+  return history;
+}
+
+// Generate mock investor activity
+function generateInvestorActivity() {
+  return {
+    last10Min: { buyers: Math.floor(Math.random() * 5000) + 1000, sellers: Math.floor(Math.random() * 4000) + 800 },
+    last1Hour: { buyers: Math.floor(Math.random() * 25000) + 5000, sellers: Math.floor(Math.random() * 20000) + 4000 },
+    last24Hours: { buyers: Math.floor(Math.random() * 150000) + 30000, sellers: Math.floor(Math.random() * 120000) + 25000 },
+    last7Days: { buyers: Math.floor(Math.random() * 800000) + 150000, sellers: Math.floor(Math.random() * 700000) + 130000 },
+  };
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -49,94 +95,126 @@ serve(async (req) => {
     console.log('Market data request:', { action, symbol, hasApiKey: !!apiKey });
 
     if (action === 'getOverview') {
-      // Return demo data for overview
-      // In production, you'd fetch from multiple API calls
-      console.log('Returning market overview data');
+      console.log('Returning Indian market overview data');
       return new Response(
         JSON.stringify(demoStocks),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    if (action === 'getStockDetails' && symbol) {
+      // Find stock in our data
+      const allStocks = [
+        ...demoStocks.topGainers,
+        ...demoStocks.topLosers,
+        ...demoStocks.mostActive,
+        ...demoStocks.nifty50,
+      ];
+      
+      const stock = allStocks.find(s => s.symbol === symbol) || {
+        symbol,
+        name: symbol.replace('.NS', '').replace('.BO', ''),
+        price: 1000 + Math.random() * 2000,
+        change: (Math.random() - 0.5) * 100,
+        changePercent: (Math.random() - 0.5) * 10,
+        exchange: 'NSE',
+      };
+
+      const basePrice = typeof stock.price === 'number' ? stock.price : 1000;
+      
+      const details = {
+        ...stock,
+        priceHistory: generatePriceHistory(basePrice),
+        investorActivity: generateInvestorActivity(),
+        marketCap: (basePrice * (Math.random() * 1000000000 + 100000000)).toFixed(0),
+        pe: (Math.random() * 40 + 10).toFixed(2),
+        eps: (basePrice / (Math.random() * 30 + 10)).toFixed(2),
+        dividend: (Math.random() * 3).toFixed(2),
+        high52Week: (basePrice * 1.3).toFixed(2),
+        low52Week: (basePrice * 0.7).toFixed(2),
+        avgVolume: Math.floor(Math.random() * 20000000) + 5000000,
+        beta: (Math.random() * 1.5 + 0.5).toFixed(2),
+      };
+
+      console.log('Returning stock details for:', symbol);
+      return new Response(
+        JSON.stringify(details),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (action === 'search' && symbol) {
-      if (!apiKey) {
-        // Return mock search results
-        const mockResults = [
-          { symbol: symbol.toUpperCase(), name: `${symbol.toUpperCase()} Inc`, type: 'Equity', region: 'United States' },
-        ];
-        return new Response(
-          JSON.stringify({ results: mockResults }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      // Search Indian stocks
+      const searchTerm = symbol.toUpperCase();
+      const allStocks = [
+        ...demoStocks.topGainers,
+        ...demoStocks.topLosers,
+        ...demoStocks.mostActive,
+        ...demoStocks.nifty50,
+      ];
+      
+      const results = allStocks
+        .filter(s => s.symbol.includes(searchTerm) || s.name.toUpperCase().includes(searchTerm))
+        .map(s => ({
+          symbol: s.symbol,
+          name: s.name,
+          type: 'Equity',
+          region: 'India',
+          exchange: s.exchange || 'NSE',
+        }));
+
+      // Add some popular stocks if no results
+      if (results.length === 0) {
+        results.push(
+          { symbol: `${searchTerm}.NS`, name: `${searchTerm}`, type: 'Equity', region: 'India', exchange: 'NSE' },
         );
       }
 
-      // Search for symbol using Alpha Vantage
-      const searchUrl = `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${symbol}&apikey=${apiKey}`;
-      const searchResponse = await fetch(searchUrl);
-      const searchData = await searchResponse.json();
-
-      console.log('Alpha Vantage search response:', searchData);
-
-      const results = (searchData.bestMatches || []).map((match: any) => ({
-        symbol: match['1. symbol'],
-        name: match['2. name'],
-        type: match['3. type'],
-        region: match['4. region'],
-      }));
-
       return new Response(
-        JSON.stringify({ results }),
+        JSON.stringify({ results: results.slice(0, 10) }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (action === 'getQuote' && symbol) {
-      if (!apiKey) {
-        // Return mock quote
-        const mockQuote = {
-          symbol: symbol.toUpperCase(),
-          price: (Math.random() * 500 + 50).toFixed(2),
-          change: ((Math.random() - 0.5) * 20).toFixed(2),
-          changePercent: ((Math.random() - 0.5) * 10).toFixed(2),
-          high: (Math.random() * 500 + 60).toFixed(2),
-          low: (Math.random() * 500 + 40).toFixed(2),
-          volume: Math.floor(Math.random() * 50000000).toString(),
-          previousClose: (Math.random() * 500 + 50).toFixed(2),
-        };
+      const allStocks = [
+        ...demoStocks.topGainers,
+        ...demoStocks.topLosers,
+        ...demoStocks.mostActive,
+        ...demoStocks.nifty50,
+      ];
+      
+      const stock = allStocks.find(s => s.symbol === symbol);
+      
+      if (stock) {
         return new Response(
-          JSON.stringify(mockQuote),
+          JSON.stringify({
+            symbol: stock.symbol,
+            price: stock.price,
+            change: stock.change,
+            changePercent: stock.changePercent,
+            high: stock.price * 1.02,
+            low: stock.price * 0.98,
+            volume: Math.floor(Math.random() * 10000000),
+            previousClose: stock.price - stock.change,
+          }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Get quote from Alpha Vantage
-      const quoteUrl = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`;
-      const quoteResponse = await fetch(quoteUrl);
-      const quoteData = await quoteResponse.json();
-
-      console.log('Alpha Vantage quote response:', quoteData);
-
-      const quote = quoteData['Global Quote'];
-      if (!quote || Object.keys(quote).length === 0) {
-        return new Response(
-          JSON.stringify({ error: 'Quote not found' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      const result = {
-        symbol: quote['01. symbol'],
-        price: parseFloat(quote['05. price']),
-        change: parseFloat(quote['09. change']),
-        changePercent: parseFloat(quote['10. change percent']?.replace('%', '')),
-        high: parseFloat(quote['03. high']),
-        low: parseFloat(quote['04. low']),
-        volume: quote['06. volume'],
-        previousClose: parseFloat(quote['08. previous close']),
-      };
-
+      // Return mock quote for unknown symbols
+      const mockPrice = 500 + Math.random() * 2000;
       return new Response(
-        JSON.stringify(result),
+        JSON.stringify({
+          symbol,
+          price: mockPrice,
+          change: (Math.random() - 0.5) * 50,
+          changePercent: (Math.random() - 0.5) * 5,
+          high: mockPrice * 1.02,
+          low: mockPrice * 0.98,
+          volume: Math.floor(Math.random() * 10000000),
+          previousClose: mockPrice * 0.99,
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
