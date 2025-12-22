@@ -6,8 +6,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import AuthPage from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
-import ActiveTrades from "./pages/ActiveTrades";
-import TradeHistory from "./pages/TradeHistory";
 import WebhookSetup from "./pages/WebhookSetup";
 import Settings from "./pages/Settings";
 import MarketOverview from "./pages/MarketOverview";
@@ -62,8 +60,6 @@ function AppRoutes() {
       <Route path="/market" element={<ProtectedRoute><MarketOverview /></ProtectedRoute>} />
       <Route path="/stock/:symbol" element={<ProtectedRoute><StockDetails /></ProtectedRoute>} />
       <Route path="/holdings" element={<ProtectedRoute><Holdings /></ProtectedRoute>} />
-      <Route path="/trades" element={<ProtectedRoute><ActiveTrades /></ProtectedRoute>} />
-      <Route path="/history" element={<ProtectedRoute><TradeHistory /></ProtectedRoute>} />
       <Route path="/webhook" element={<ProtectedRoute><WebhookSetup /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />

@@ -2,8 +2,7 @@ import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  TrendingUp, 
-  History, 
+  TrendingUp,
   Settings, 
   Webhook, 
   LogOut,
@@ -26,9 +25,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: <LayoutDashboard className="h-5 w-5" /> },
   { label: 'Market Overview', href: '/market', icon: <BarChart3 className="h-5 w-5" /> },
-  { label: 'Holdings', href: '/holdings', icon: <Briefcase className="h-5 w-5" /> },
-  { label: 'Active Trades', href: '/trades', icon: <TrendingUp className="h-5 w-5" /> },
-  { label: 'Trade History', href: '/history', icon: <History className="h-5 w-5" /> },
+  { label: 'Portfolio', href: '/holdings', icon: <Briefcase className="h-5 w-5" /> },
   { label: 'Webhook Setup', href: '/webhook', icon: <Webhook className="h-5 w-5" /> },
   { label: 'Settings', href: '/settings', icon: <Settings className="h-5 w-5" /> },
 ];
