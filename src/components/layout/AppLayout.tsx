@@ -9,7 +9,8 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronLeft
+  ChevronLeft,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: <LayoutDashboard className="h-5 w-5" /> },
+  { label: 'Market Overview', href: '/market', icon: <BarChart3 className="h-5 w-5" /> },
   { label: 'Active Trades', href: '/trades', icon: <TrendingUp className="h-5 w-5" /> },
   { label: 'Trade History', href: '/history', icon: <History className="h-5 w-5" /> },
   { label: 'Webhook Setup', href: '/webhook', icon: <Webhook className="h-5 w-5" /> },
