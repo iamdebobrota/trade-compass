@@ -24,6 +24,7 @@ import { toast } from '@/hooks/use-toast';
 import { QuickTradeDialog } from '@/components/market/QuickTradeDialog';
 import { StockSuggestions } from '@/components/market/StockSuggestions';
 import { LiveStockCard } from '@/components/market/LiveStockCard';
+import { MarketIndicesTicker } from '@/components/market/MarketIndicesTicker';
 
 interface Stock {
   symbol: string;
@@ -95,8 +96,12 @@ export default function MarketOverview() {
 
   return (
     <AppLayout>
+      {/* Market Indices Ticker */}
+      <div className="-mx-6 -mt-6 mb-6">
+        <MarketIndicesTicker />
+      </div>
+
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Market Overview</h1>

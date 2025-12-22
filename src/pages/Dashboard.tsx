@@ -1,25 +1,102 @@
-import { DollarSign, TrendingUp, Target, Activity, BarChart3, Percent } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { DollarSign, TrendingUp, Target, Activity, BarChart3, Percent, Briefcase, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { TradeCard } from '@/components/dashboard/TradeCard';
 import { useTradingStats, useActiveTrades } from '@/hooks/useTrades';
 import { useTradingSettings } from '@/hooks/useTradingSettings';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { MarketIndicesTicker } from '@/components/market/MarketIndicesTicker';
+import { Trade } from '@/types/trading';
+
+interface LiveHolding {
+  trade: Trade;
+  livePrice: number;
+  livePnl: number;
+  livePnlPercent: number;
+}
 
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useTradingStats();
   const { data: activeTrades, isLoading: tradesLoading } = useActiveTrades();
   const { data: settings } = useTradingSettings();
   const navigate = useNavigate();
+  const [liveHoldings, setLiveHoldings] = useState<LiveHolding[]>([]);
 
   const equityTrades = activeTrades?.filter(t => t.segment === 'equity') || [];
   const forexTrades = activeTrades?.filter(t => t.segment === 'forex') || [];
 
+  // Initialize and update live prices for holdings summary
+  useEffect(() => {
+    if (!activeTrades) return;
+
+    const initialHoldings = activeTrades.map(trade => ({
+      trade,
+      livePrice: Number(trade.current_price) || Number(trade.entry_price),
+      livePnl: Number(trade.pnl) || 0,
+      livePnlPercent: Number(trade.pnl_percent) || 0,
+    }));
+    setLiveHoldings(initialHoldings);
+
+    const interval = setInterval(() => {
+      setLiveHoldings(prev => prev.map(holding => {
+        const fluctuation = (Math.random() - 0.5) * 0.006 * holding.livePrice;
+        const newPrice = parseFloat((holding.livePrice + fluctuation).toFixed(2));
+        
+        const entryPrice = Number(holding.trade.entry_price);
+        const quantity = Number(holding.trade.quantity);
+        
+        let newPnl: number;
+        let newPnlPercent: number;
+        
+        if (holding.trade.direction === 'long') {
+          newPnl = (newPrice - entryPrice) * quantity;
+          newPnlPercent = ((newPrice - entryPrice) / entryPrice) * 100;
+        } else {
+          newPnl = (entryPrice - newPrice) * quantity;
+          newPnlPercent = ((entryPrice - newPrice) / entryPrice) * 100;
+        }
+
+        return {
+          ...holding,
+          livePrice: newPrice,
+          livePnl: parseFloat(newPnl.toFixed(2)),
+          livePnlPercent: parseFloat(newPnlPercent.toFixed(2)),
+        };
+      }));
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [activeTrades]);
+
+  const totalInvested = liveHoldings.reduce((sum, h) => 
+    sum + (Number(h.trade.entry_price) * Number(h.trade.quantity)), 0
+  );
+  const totalCurrentValue = liveHoldings.reduce((sum, h) => 
+    sum + (h.livePrice * Number(h.trade.quantity)), 0
+  );
+  const totalLivePnl = liveHoldings.reduce((sum, h) => sum + h.livePnl, 0);
+  const totalLivePnlPercent = totalInvested > 0 ? ((totalCurrentValue - totalInvested) / totalInvested) * 100 : 0;
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
   return (
     <AppLayout>
+      {/* Market Indices Ticker */}
+      <div className="-mx-4 lg:-mx-8 -mt-4 lg:-mt-8 mb-6">
+        <MarketIndicesTicker />
+      </div>
+
       <div className="space-y-8">
         {/* Header */}
         <div>
@@ -65,6 +142,51 @@ export default function Dashboard() {
             </>
           )}
         </div>
+
+        {/* Live Holdings Summary */}
+        {liveHoldings.length > 0 && (
+          <Card className="border-profit/20 bg-gradient-to-r from-profit/5 to-transparent">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-primary" />
+                  Your Investments
+                  <div className="h-2 w-2 rounded-full bg-profit animate-pulse" />
+                </CardTitle>
+                <Button variant="outline" size="sm" onClick={() => navigate('/holdings')}>
+                  View All
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Current Value</p>
+                  <p className="text-2xl font-bold">{formatCurrency(totalCurrentValue)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Invested</p>
+                  <p className="text-xl font-semibold text-muted-foreground">{formatCurrency(totalInvested)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Today's Returns</p>
+                  <div className={`flex items-center gap-1 ${totalLivePnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                    {totalLivePnl >= 0 ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+                    <span className="text-xl font-bold">
+                      {totalLivePnl >= 0 ? '+' : ''}{formatCurrency(totalLivePnl)}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Returns</p>
+                  <p className={`text-xl font-bold ${totalLivePnlPercent >= 0 ? 'text-profit' : 'text-loss'}`}>
+                    {totalLivePnlPercent >= 0 ? '+' : ''}{totalLivePnlPercent.toFixed(2)}%
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Active Trades by Segment */}
         <Card>
