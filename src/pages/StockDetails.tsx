@@ -7,15 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowLeft,
   TrendingUp,
   TrendingDown,
   Users,
   Clock,
-  BarChart3,
-  Target,
   ShoppingCart,
   RefreshCw,
   ArrowUpRight,
@@ -24,20 +21,18 @@ import {
   Sparkles
 } from 'lucide-react';
 import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
   ResponsiveContainer,
-  AreaChart,
-  Area,
   BarChart,
-  Bar
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip
 } from 'recharts';
 import { QuickTradeDialog } from '@/components/market/QuickTradeDialog';
 import { StockAnalysis } from '@/components/market/StockAnalysis';
+import { StockChart } from '@/components/market/StockChart';
+import { PerformanceBars } from '@/components/market/PerformanceBars';
 
 interface PriceHistory {
   date: string;
@@ -274,73 +269,21 @@ export default function StockDetailsPage() {
         </Card>
 
         {/* Price Chart */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                Price History
-              </CardTitle>
-              <div className="flex gap-1">
-                {(['1D', '1W', '1M', '3M', '1Y'] as const).map((period) => (
-                  <Button
-                    key={period}
-                    variant={chartPeriod === period ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setChartPeriod(period)}
-                  >
-                    {period}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={getFilteredHistory()}>
-                  <defs>
-                    <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={isPositive ? '#22c55e' : '#ef4444'} stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor={isPositive ? '#22c55e' : '#ef4444'} stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={(value) => {
-                      const date = new Date(value);
-                      return chartPeriod === '1D' ? date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) 
-                        : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-                    }}
-                  />
-                  <YAxis 
-                    domain={['auto', 'auto']}
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={(value) => `₹${value.toFixed(0)}`}
-                  />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
-                    formatter={(value: number) => [formatCurrency(value), 'Price']}
-                    labelFormatter={(label) => new Date(label).toLocaleDateString('en-IN', { 
-                      weekday: 'short', 
-                      day: 'numeric', 
-                      month: 'short' 
-                    })}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="close" 
-                    stroke={isPositive ? '#22c55e' : '#ef4444'} 
-                    strokeWidth={2}
-                    fill="url(#colorPrice)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        <StockChart 
+          priceHistory={getFilteredHistory()}
+          isPositive={isPositive}
+          chartPeriod={chartPeriod}
+          onPeriodChange={setChartPeriod}
+        />
+
+        {/* Performance Bars - Zerodha Style */}
+        <PerformanceBars
+          currentPrice={currentPrice}
+          todaysLow={Math.min(...(livePriceHistory.length > 0 ? livePriceHistory.map(p => p.low) : [currentPrice * 0.98]))}
+          todaysHigh={Math.max(...(livePriceHistory.length > 0 ? livePriceHistory.map(p => p.high) : [currentPrice * 1.02]))}
+          low52Week={parseFloat(stock.low52Week)}
+          high52Week={parseFloat(stock.high52Week)}
+        />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
