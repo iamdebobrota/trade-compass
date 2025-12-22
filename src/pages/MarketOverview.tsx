@@ -16,17 +16,14 @@ import {
   Activity, 
   Sparkles, 
   RefreshCw,
-  ArrowUpRight,
-  ArrowDownRight,
   ShoppingCart,
-  BarChart3,
   Loader2,
-  ChevronRight,
   Globe
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { QuickTradeDialog } from '@/components/market/QuickTradeDialog';
 import { StockSuggestions } from '@/components/market/StockSuggestions';
+import { LiveStockCard } from '@/components/market/LiveStockCard';
 
 interface Stock {
   symbol: string;
@@ -52,8 +49,9 @@ export default function MarketOverview() {
   const [selectedStock, setSelectedStock] = useState<{ symbol: string; price: number } | null>(null);
   const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
 
-  const handleViewDetails = (symbol: string) => {
-    navigate(`/stock/${encodeURIComponent(symbol)}`);
+  const handleQuickBuy = (symbol: string, price: number) => {
+    setSelectedStock({ symbol, price });
+    setTradeDialogOpen(true);
   };
 
   // Fetch market overview data
@@ -94,48 +92,6 @@ export default function MarketOverview() {
       setIsSearching(false);
     }
   };
-
-  const handleQuickBuy = (symbol: string, price: number) => {
-    setSelectedStock({ symbol, price });
-    setTradeDialogOpen(true);
-  };
-
-  const StockCard = ({ stock, showVolume = false }: { stock: Stock; showVolume?: boolean }) => (
-    <div 
-      className="flex items-center justify-between p-4 rounded-lg bg-card border hover:bg-accent/50 transition-colors cursor-pointer"
-      onClick={() => handleViewDetails(stock.symbol)}
-    >
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <span className="font-bold">{stock.symbol.replace('.NS', '').replace('.BO', '')}</span>
-          <span className="text-sm text-muted-foreground truncate max-w-[150px]">{stock.name}</span>
-        </div>
-        {showVolume && stock.volume && (
-          <span className="text-xs text-muted-foreground">Vol: {stock.volume}</span>
-        )}
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="text-right">
-          <p className="font-semibold">₹{stock.price.toFixed(2)}</p>
-          <div className={`flex items-center text-sm ${stock.change >= 0 ? 'text-profit' : 'text-loss'}`}>
-            {stock.change >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-            <span>{stock.change >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%</span>
-          </div>
-        </div>
-        <Button 
-          size="sm" 
-          variant="outline"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleQuickBuy(stock.symbol, stock.price);
-          }}
-        >
-          <ShoppingCart className="h-4 w-4" />
-        </Button>
-        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-      </div>
-    </div>
-  );
 
   return (
     <AppLayout>
@@ -249,25 +205,25 @@ export default function MarketOverview() {
                 <>
                   <TabsContent value="gainers" className="space-y-2 mt-4">
                     {marketData?.topGainers?.map((stock) => (
-                      <StockCard key={stock.symbol} stock={stock} />
+                      <LiveStockCard key={stock.symbol} stock={stock} onQuickBuy={handleQuickBuy} />
                     ))}
                   </TabsContent>
 
                   <TabsContent value="losers" className="space-y-2 mt-4">
                     {marketData?.topLosers?.map((stock) => (
-                      <StockCard key={stock.symbol} stock={stock} />
+                      <LiveStockCard key={stock.symbol} stock={stock} onQuickBuy={handleQuickBuy} />
                     ))}
                   </TabsContent>
 
                   <TabsContent value="active" className="space-y-2 mt-4">
                     {marketData?.mostActive?.map((stock) => (
-                      <StockCard key={stock.symbol} stock={stock} showVolume />
+                      <LiveStockCard key={stock.symbol} stock={stock} showVolume onQuickBuy={handleQuickBuy} />
                     ))}
                   </TabsContent>
 
                   <TabsContent value="forex" className="space-y-2 mt-4">
                     {marketData?.forexPairs?.map((pair) => (
-                      <StockCard key={pair.symbol} stock={pair} />
+                      <LiveStockCard key={pair.symbol} stock={pair} onQuickBuy={handleQuickBuy} />
                     ))}
                   </TabsContent>
                 </>
